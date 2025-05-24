@@ -1,58 +1,121 @@
-// Career paths database
+// Career paths data
 const careerPaths = {
     "data analyst": {
+        title: "Data Analyst",
         steps: [
             {
-                title: "Learn SQL Fundamentals",
+                name: "Foundations",
                 resources: [
-                    { name: "SQLZoo", url: "https://sqlzoo.net/", type: "Interactive" },
-                    { name: "W3Schools SQL", url: "https://www.w3schools.com/sql/", type: "Tutorial" }
+                    { title: "SQL Basics", url: "https://www.w3schools.com/sql/", rating: 0 },
+                    { title: "Python Programming", url: "https://www.python.org/about/gettingstarted/", rating: 0 },
+                    { title: "Statistics Fundamentals", url: "https://www.khanacademy.org/math/statistics-probability", rating: 0 }
                 ]
             },
             {
-                title: "Master Python Basics",
+                name: "Data Analysis Tools",
                 resources: [
-                    { name: "Python.org Tutorial", url: "https://docs.python.org/3/tutorial/", type: "Documentation" },
-                    { name: "Codecademy Python", url: "https://www.codecademy.com/learn/learn-python", type: "Course" }
+                    { title: "Pandas Tutorial", url: "https://pandas.pydata.org/docs/getting_started/", rating: 0 },
+                    { title: "Excel for Data Analysis", url: "https://support.microsoft.com/en-us/excel", rating: 0 }
                 ]
             },
             {
-                title: "Data Analysis Libraries",
+                name: "Visualization",
                 resources: [
-                    { name: "Pandas Documentation", url: "https://pandas.pydata.org/docs/", type: "Documentation" },
-                    { name: "NumPy Tutorial", url: "https://numpy.org/doc/stable/user/quickstart.html", type: "Tutorial" }
+                    { title: "Tableau Public", url: "https://public.tableau.com/en-us/s/", rating: 0 },
+                    { title: "Power BI Basics", url: "https://powerbi.microsoft.com/en-us/learning/", rating: 0 }
                 ]
             }
         ]
     },
     "web developer": {
+        title: "Web Developer",
         steps: [
             {
-                title: "HTML & CSS Fundamentals",
+                name: "HTML/CSS Basics",
                 resources: [
-                    { name: "MDN Web Docs", url: "https://developer.mozilla.org/en-US/docs/Learn", type: "Documentation" },
-                    { name: "freeCodeCamp", url: "https://www.freecodecamp.org/", type: "Interactive" }
+                    { title: "HTML5 Tutorial", url: "https://www.w3schools.com/html/", rating: 0 },
+                    { title: "CSS Fundamentals", url: "https://www.w3schools.com/css/", rating: 0 }
                 ]
             },
             {
-                title: "JavaScript Essentials",
+                name: "JavaScript",
                 resources: [
-                    { name: "JavaScript.info", url: "https://javascript.info/", type: "Tutorial" },
-                    { name: "Eloquent JavaScript", url: "https://eloquentjavascript.net/", type: "Book" }
+                    { title: "JavaScript Basics", url: "https://javascript.info/", rating: 0 },
+                    { title: "Modern JavaScript Tutorial", url: "https://javascript.info/", rating: 0 }
                 ]
             },
             {
-                title: "Frontend Frameworks",
+                name: "Frontend Frameworks",
                 resources: [
-                    { name: "React Tutorial", url: "https://reactjs.org/tutorial/tutorial.html", type: "Tutorial" },
-                    { name: "Vue.js Guide", url: "https://vuejs.org/v2/guide/", type: "Documentation" }
+                    { title: "React Tutorial", url: "https://reactjs.org/tutorial/tutorial.html", rating: 0 },
+                    { title: "Vue.js Guide", url: "https://vuejs.org/v2/guide/", rating: 0 }
                 ]
             }
         ]
     }
 };
 
-// Function to fetch inspirational quote
+// Load ratings from localStorage
+function loadRatings() {
+    const savedRatings = localStorage.getItem('resourceRatings');
+    if (savedRatings) {
+        const ratings = JSON.parse(savedRatings);
+        Object.keys(careerPaths).forEach(career => {
+            careerPaths[career].steps.forEach(step => {
+                step.resources.forEach(resource => {
+                    const savedRating = ratings[resource.url];
+                    if (savedRating !== undefined) {
+                        resource.rating = savedRating;
+                    }
+                });
+            });
+        });
+    }
+}
+
+// Save ratings to localStorage
+function saveRatings() {
+    const ratings = {};
+    Object.keys(careerPaths).forEach(career => {
+        careerPaths[career].steps.forEach(step => {
+            step.resources.forEach(resource => {
+                ratings[resource.url] = resource.rating;
+            });
+        });
+    });
+    localStorage.setItem('resourceRatings', JSON.stringify(ratings));
+}
+
+// Rate a resource
+function rateResource(url, rating) {
+    Object.keys(careerPaths).forEach(career => {
+        careerPaths[career].steps.forEach(step => {
+            step.resources.forEach(resource => {
+                if (resource.url === url) {
+                    resource.rating = rating;
+                }
+            });
+        });
+    });
+    saveRatings();
+    getCareerPath(); // Refresh the display
+}
+
+// Generate star rating HTML
+function generateStarRating(url, currentRating) {
+    let html = '<div class="flex items-center space-x-1">';
+    for (let i = 1; i <= 5; i++) {
+        html += `
+            <button onclick="rateResource('${url}', ${i})" 
+                    class="${i <= currentRating ? 'text-yellow-500' : 'text-gray-300'} hover:text-yellow-500">
+                ★
+            </button>`;
+    }
+    html += '</div>';
+    return html;
+}
+
+// Fetch quote from ZenQuotes API
 async function getQuote() {
     try {
         const response = await fetch('https://api.quotable.io/random');
@@ -64,52 +127,78 @@ async function getQuote() {
     }
 }
 
-// Function to generate career path
+// Main function to get career path
 async function getCareerPath() {
-    const careerInput = document.getElementById('careerInput').value.toLowerCase();
+    const input = document.getElementById('careerInput').value.toLowerCase();
     const resultDiv = document.getElementById('result');
+    const loadingSpinner = document.getElementById('loadingSpinner');
     
-    if (!careerPaths[careerInput]) {
+    loadingSpinner.classList.remove('hidden');
+    
+    try {
+        const quote = await getQuote();
+        const path = careerPaths[input];
+        
+        if (!path) {
+            resultDiv.innerHTML = `
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+                    Career path not found. Please try one of the available careers.
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <p class="italic text-gray-600">${quote}</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <p class="italic text-gray-600 mb-4">${quote}</p>
+                <h2 class="text-2xl font-bold mb-4">Learning Path: ${path.title}</h2>
+        `;
+
+        path.steps.forEach((step, index) => {
+            html += `
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold mb-3">Step ${index + 1}: ${step.name}</h3>
+                    <div class="space-y-4">
+            `;
+
+            step.resources.forEach(resource => {
+                html += `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <a href="${resource.url}" 
+                               target="_blank" 
+                               class="text-blue-600 hover:text-blue-800 font-medium">
+                                ${resource.title}
+                            </a>
+                            ${generateStarRating(resource.url, resource.rating)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        resultDiv.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error:', error);
         resultDiv.innerHTML = `
             <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
-                Career path not found. Please try one of the available careers.
+                An error occurred. Please try again later.
             </div>
         `;
-        return;
+    } finally {
+        loadingSpinner.classList.add('hidden');
     }
-
-    const quote = await getQuote();
-    const path = careerPaths[careerInput];
-    
-    let html = `
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <div class="mb-6 text-center italic text-gray-600">${quote}</div>
-            <h2 class="text-2xl font-bold mb-4">Learning Path for ${careerInput.charAt(0).toUpperCase() + careerInput.slice(1)}</h2>
-            <div class="space-y-6">
-    `;
-
-    path.steps.forEach((step, index) => {
-        html += `
-            <div class="border-l-4 border-blue-500 pl-4">
-                <h3 class="text-xl font-semibold mb-2">Step ${index + 1}: ${step.title}</h3>
-                <div class="space-y-2">
-                    ${step.resources.map(resource => `
-                        <div class="flex items-center">
-                            <span class="w-20 text-sm text-gray-500">${resource.type}</span>
-                            <a href="${resource.url}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
-                                ${resource.name}
-                            </a>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    });
-
-    html += `
-            </div>
-        </div>
-    `;
-
-    resultDiv.innerHTML = html;
 }
+
+// Load saved ratings when the page loads
+document.addEventListener('DOMContentLoaded', loadRatings);

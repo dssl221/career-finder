@@ -1,7 +1,7 @@
 // Determine the API base URL based on the environment
 const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:8000/api'
-    : 'https://your-production-api-domain.com/api';  // We'll update this once we deploy
+    : 'https://dssl221.pythonanywhere.com/api';  // We'll update this once we deploy
 
 async function getCareerPath() {
     const careerInput = document.getElementById('careerInput').value;

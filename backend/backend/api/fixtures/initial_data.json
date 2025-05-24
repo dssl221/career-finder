@@ -1,0 +1,36 @@
+[
+    {
+        "model": "api.careerpath",
+        "pk": 1,
+        "fields": {
+            "title": "Data Analyst",
+            "description": "Step-by-step guide to become a Data Analyst"
+        }
+    },
+    {
+        "model": "api.resource",
+        "pk": 1,
+        "fields": {
+            "career_path": 1,
+            "title": "SQL Fundamentals",
+            "url": "https://www.w3schools.com/sql/",
+            "description": "Learn SQL basics",
+            "type": "course",
+            "rating": 4.5,
+            "rating_count": 100
+        }
+    },
+    {
+        "model": "api.resource",
+        "pk": 2,
+        "fields": {
+            "career_path": 1,
+            "title": "Python for Data Analysis",
+            "url": "https://www.coursera.org/learn/python-data-analysis",
+            "description": "Master Python for data analysis",
+            "type": "course",
+            "rating": 4.8,
+            "rating_count": 200
+        }
+    }
+]

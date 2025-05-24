@@ -33,49 +33,48 @@ async function getCareerPath() {
         }
 
         // Get motivational quote
-        const quoteResponse = await fetch('https://api.quotable.io/random');
-        const quoteData = await quoteResponse.json();
+        const quoteResponse = await fetch('https://zenquotes.io/api/random');
+        const [quoteData] = await quoteResponse.json();
 
-        // Build the result HTML
-        let html = `
-            <div class="bg-white p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold mb-4">${data.title}</h2>
-                <p class="text-gray-600 mb-6">${data.description}</p>
-                
-                <div class="mb-6 p-4 bg-yellow-50 rounded">
-                    <p class="italic text-gray-700">"${quoteData.content}"</p>
-                    <p class="text-gray-500 text-right">- ${quoteData.author}</p>
-                </div>
-
-                <h3 class="text-xl font-semibold mb-4">Recommended Resources:</h3>
+        // Create and display the result
+        const pathHtml = `
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Career Path</h2>
                 <div class="space-y-4">
-        `;
-
-        data.resources.forEach(resource => {
-            html += `
-                <div class="resource-card bg-gray-50 p-4 rounded">
-                    <h4 class="font-semibold">${resource.title}</h4>
-                    <p class="text-gray-600 mb-2">${resource.description}</p>
-                    <div class="flex justify-between items-center">
-                        <a href="${resource.url}" target="_blank" 
-                           class="text-blue-500 hover:text-blue-700">
-                            Visit Resource →
-                        </a>
-                        <div class="flex items-center">
-                            <span class="text-yellow-500">★</span>
-                            <span class="ml-1">${resource.rating.toFixed(1)} (${resource.rating_count})</span>
+                    ${data.steps.map((step, index) => `
+                        <div class="border-l-4 border-blue-500 pl-4">
+                            <h3 class="font-bold text-lg">Step ${index + 1}</h3>
+                            <p class="text-gray-700">${step.description}</p>
+                            ${step.resources ? `
+                                <div class="mt-2">
+                                    <h4 class="font-semibold">Resources:</h4>
+                                    <ul class="list-disc list-inside">
+                                        ${step.resources.map(resource => `
+                                            <li class="flex items-center gap-2">
+                                                <a href="${resource.url}" target="_blank" class="text-blue-600 hover:underline">${resource.title}</a>
+                                                <div class="resource-rating" data-resource-id="${resource.id}">
+                                                    ${generateStarRating(resource.rating)}
+                                                </div>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
                         </div>
-                    </div>
+                    `).join('')}
                 </div>
-            `;
-        });
-
-        html += `
-                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <blockquote class="text-xl italic text-gray-700">
+                    "${quoteData.q}"
+                    <footer class="text-gray-600 mt-2">— ${quoteData.a}</footer>
+                </blockquote>
             </div>
         `;
 
-        resultDiv.innerHTML = html;
+        resultDiv.innerHTML = pathHtml;
+        setupResourceRating();
+
     } catch (error) {
         resultDiv.innerHTML = `
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -87,13 +86,54 @@ async function getCareerPath() {
     }
 }
 
-// Add event listener for the form submission
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('careerForm');
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            getCareerPath();
+function generateStarRating(rating) {
+    return `
+        <div class="flex gap-1">
+            ${Array.from({ length: 5 }, (_, i) => `
+                <button class="star-button ${i < rating ? 'text-yellow-400' : 'text-gray-300'}" data-rating="${i + 1}">
+                    ★
+                </button>
+            `).join('')}
+        </div>
+    `;
+}
+
+function setupResourceRating() {
+    document.querySelectorAll('.resource-rating').forEach(container => {
+        const resourceId = container.dataset.resourceId;
+        container.querySelectorAll('.star-button').forEach(button => {
+            button.addEventListener('click', async () => {
+                const rating = parseInt(button.dataset.rating);
+                try {
+                    const response = await fetch(`${BASE_URL}/rate-resource/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            resource_id: resourceId,
+                            rating: rating
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to rate resource');
+                    }
+
+                    // Update stars visually
+                    container.querySelectorAll('.star-button').forEach((star, index) => {
+                        star.className = `star-button ${index < rating ? 'text-yellow-400' : 'text-gray-300'}`;
+                    });
+
+                } catch (error) {
+                    alert('Failed to rate resource. Please try again.');
+                }
+            });
         });
-    }
+    });
+}
+
+document.getElementById('careerForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    getCareerPath();
 });

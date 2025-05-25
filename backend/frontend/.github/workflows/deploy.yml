@@ -7,30 +7,15 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-
-      - name: Install Dependencies
-        run: |
-          cd frontend
-          npm ci || npm install || echo "No package.json found, skipping npm install"
-
-      - name: Build
-        run: |
-          cd frontend
-          npm run build || echo "No build script found, skipping build"
-
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: frontend
+          folder: .
           clean: true

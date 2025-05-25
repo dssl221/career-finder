@@ -32,12 +32,17 @@
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
             </div>
 
-            <div id="pathResult" class="mt-6 hidden">
+            <div id="result" class="mt-6">
+                <div class="text-center text-gray-600">Enter your career goal and click the button to get started!</div>
+            </div>
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Learning Path</h2>
                 <div id="steps" class="space-y-6"></div>
             </div>
         </div>
     </div>
     <script src="js/app.js"></script>
+    <script>
+        document.getElementById('getPath').addEventListener('click', generatePath);
+    </script>
 </body>
 </html>
